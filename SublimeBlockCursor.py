@@ -1,34 +1,25 @@
-import sublime
-import sublime_plugin
-import os
 from threading import Timer
 
+import sublime
+import sublime_plugin
+
+
 class BlockCursorEverywhere(sublime_plugin.EventListener):
+
     def show_block_cursor(self, view):
         validRegions = []
         for s in view.sel():
             if s.a != s.b:
                 continue
             validRegions.append(sublime.Region(s.a, s.a + 1))
+
         if validRegions.__len__:
-            view.add_regions('BlockCursorListener', validRegions, 'block_cursor')
+            view.add_regions('BlockCursorListener', validRegions, 'block_cursor', '', sublime.DRAW_NO_OUTLINE)
         else:
             view.erase_regions('BlockCursorListener')
 
-    def is_vintageous_installed(self):
-        if int(sublime.version()) < 3000:
-            return os.path.isdir(os.path.join(sublime.packages_path(), 'Vintageous'))
-        else:
-            return os.path.exists(os.path.join(sublime.installed_packages_path(), 'Vintageous.sublime-package'))
-
-    def is_enabled(self, view, package_name):
-        return package_name not in view.settings().get('ignored_packages', [])
-
     def on_selection_modified(self, view):
-        is_widget = view.settings().get('is_widget')
-        command_mode = view.settings().get('command_mode')
-
-        if is_widget or (self.vi_enabled and not(command_mode)):
+        if not view.settings().get('command_mode') or view.settings().get('is_widget'):
             view.erase_regions('BlockCursorListener')
             return
 
@@ -41,13 +32,10 @@ class BlockCursorEverywhere(sublime_plugin.EventListener):
 
     def on_activated(self, view):
         self.current_view = view
-        self.timer = Timer(0, lambda: none)
-
-        self.vintage_enabled = self.is_enabled(view, 'Vintage')
-        self.vintageous_enabled = self.is_vintageous_installed() and self.is_enabled(view, 'Vintageous')
-        self.vi_enabled = self.vintage_enabled or self.vintageous_enabled
+        self.timer = Timer(0, lambda: None)
 
         self.on_selection_modified(view)
+
         view.settings().add_on_change('command_mode', self.on_command_mode_change)
 
     def on_command_mode_change(self):
